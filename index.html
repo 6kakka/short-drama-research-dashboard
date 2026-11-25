@@ -258,12 +258,13 @@
           <span id="rankAnalysisBadge" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">当日复盘</span>
           <h2 class="text-base sm:text-lg font-bold text-slate-900">榜单内容分析</h2>
         </div>
+        <p class="text-xs text-slate-500">研判结论：当前榜单结构意味着什么、建议如何跟进（数据明细见下方「高频内容明细」）</p>
         <p id="rankNarrative" class="text-xs sm:text-sm text-slate-700 leading-relaxed"></p>
       </div>
 
       <div class="card-surface p-5 sm:p-6">
-        <h2 id="rankInsightTitle" class="text-base font-bold text-slate-900 mb-1">高频内容拆解</h2>
-        <p class="text-xs text-slate-500 mb-4">标签维度取自竞品拆解库（一级标签 + 重点二级标签）；未拆解的剧目不参与标签统计</p>
+        <h2 id="rankInsightTitle" class="text-base font-bold text-slate-900 mb-1">高频内容明细</h2>
+        <p class="text-xs text-slate-500 mb-4">数据明细：完整频次清单与具体剧目，仅列事实不做研判；标签维度取自竞品拆解库（未拆解剧目不参与标签统计）</p>
         <div id="rankInsights" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
       </div>
     </section>
@@ -1010,61 +1011,100 @@
         : `近${rankState.mode === 'week' ? 7 : 30}天（${periodDates[0]} ~ ${periodDates[periodDates.length - 1]}，${periodDates.length} 个榜单日期）`;
       const noRocketWord = rankState.mode === 'day' ? '当日' : '区间内';
 
-      // ---- 重点结论（逐条列出，一眼抓重点）----
+      // ---- 榜单内容分析（只输出研判结论，不重复罗列明细）----
+      const matchedBase = matched.length || 1;
+      const cr3Tag = topP.slice(0, 3).reduce((a, x) => a + x[1], 0);
+      const cr2App = topApps.slice(0, 2).reduce((a, x) => a + x[1], 0);
+      const scopeShort = rankState.mode === 'day' ? '当日' : (rankState.mode === 'week' ? '近7天' : '近30天');
+
       const bullets = [];
-      if (topP.length) bullets.push({ icon: '🏷', label: '高频题材', text: topP.slice(0, 3).map(x => `${x[0]}（${x[1]}部）`).join('、') });
-      if (topS.length) bullets.push({ icon: '🎯', label: '头号热梗', text: topS.slice(0, 3).map(x => `#${x[0]}（${x[1]}次）`).join('、') });
-      bullets.push({ icon: '🆕', label: '新老配比', text: `新剧 ${newCnt} 部（${fmtPct(newCnt, n)}）/ 老剧 ${n - newCnt} 部（${fmtPct(n - newCnt, n)}）—— ${newCnt >= n - newCnt ? '上新驱动' : '老剧主导'}` });
-      if (topApps.length) bullets.push({ icon: '📱', label: '头部平台', text: `${topApps[0][0]} ${topApps[0][1]} 部（${fmtPct(topApps[0][1], n)}）居首` + (topApps[1] ? `，其次 ${topApps.slice(1).map(x => `${x[0]} ${x[1]} 部`).join('、')}` : '') });
-      bullets.push({ icon: '🚀', label: '新投黑马', text: rockets.length ? `${rocketCnt} 部：` + rockets.slice(0, 3).map(r => `${r.drama}（投放${r.daysNum}天）`).join('、') : `${noRocketWord}无投放≤7天即进 TOP10 的剧目` });
-      bullets.push({ icon: '🔁', label: '反复在榜', text: repeatCnt ? `${repeatCnt} 部` + (evergreens.length ? `，最稳「${evergreens[0].drama}」（${evergreens[0].onDays} 期在榜）` : '') : '暂无' });
+      if (topP.length) {
+        const concentrated = cr3Tag / matchedBase >= 0.5;
+        bullets.push({
+          icon: '🏷', label: '题材研判',
+          text: `在榜剧集中于 ${topP.length} 个一级题材，TOP3 合计占 ${fmtPct(cr3Tag, matched.length)}` +
+            (concentrated
+              ? `，集中度高——「${topP[0][0]}」为本${scopeShort}主赛道，选题/投放可优先跟进该方向。`
+              : `，题材较分散、无明显单一主赛道，可关注排名最高剧目的题材做参考。`)
+        });
+      }
+      if (topS.length) {
+        bullets.push({
+          icon: '🎯', label: '钩子研判',
+          text: `榜单内容的核心钩子集中在「#${topS[0][0]}」等 ${Math.min(topS.length, 8)} 个二级梗点，` +
+            `多部在榜剧同时叠加 2~3 个同类梗点——新剧立项时建议沿用该组钩子组合作为安全牌。`
+        });
+      }
+      bullets.push({
+        icon: '🆕', label: '供给研判',
+        text: `新剧占 ${fmtPct(newCnt, n)}。` + (newCnt >= n * 0.4
+          ? `上新供给活跃，市场处于抢量期，新剧有较大突围窗口。`
+          : `老剧占据主要在榜位、生命周期长，新剧突围难度大，需靠强差异化的梗点组合切入。`)
+      });
+      if (topApps.length) {
+        bullets.push({
+          icon: '📱', label: '竞争研判',
+          text: `${topApps[0][0]} 以 ${fmtPct(topApps[0][1], n)} 的在榜份额领跑` +
+            (topApps[1] ? `，TOP2 平台合计 ${fmtPct(cr2App, n)}` : '') +
+            (cr2App / n >= 0.6 ? `，头部平台垄断明显，投放素材侧重点应向其主力题材倾斜。` : `，平台间竞争胶着，多平台同步铺量更稳妥。`)
+        });
+      }
+      {
+        const watch = [];
+        if (rockets.length) watch.push(`🚀 黑马「${rockets.slice(0, 2).map(r => r.drama).join('」「')}」投放${rockets[0].daysNum}天即冲进 TOP10，其题材/钩子值得快速拆解跟进`);
+        if (evergreens.length) watch.push(`🔁 「${evergreens[0].drama}」已连续 ${evergreens[0].onDays} 期在榜，属稳定放量的常青剧，可作为对标样本`);
+        bullets.push({
+          icon: '⭐', label: '重点关注',
+          text: watch.length ? watch.join('；') + '。' : `${noRocketWord}暂无黑马与常青剧，建议下次调研关注新投放剧目的初期表现。`
+        });
+      }
 
       document.getElementById('rankAnalysisBadge').textContent =
         rankState.mode === 'day' ? '当日复盘' : (rankState.mode === 'week' ? '7日复盘' : '30日复盘');
       document.getElementById('rankNarrative').innerHTML =
-        `<p class="text-sm font-bold text-slate-900 mb-2.5">${escapeHtml(scopeLabel)} · ${n} 部在榜 · 核心结论：</p>` +
+        `<p class="text-sm font-bold text-slate-900 mb-2.5">${escapeHtml(scopeLabel)} · ${n} 部在榜 · 研判结论：</p>` +
         `<ul class="space-y-2">` + bullets.map(b => `
           <li class="flex items-start gap-2 text-xs sm:text-sm leading-relaxed">
             <span class="shrink-0 font-bold text-slate-900 whitespace-nowrap">${b.icon} <span class="text-indigo-700">${escapeHtml(b.label)}</span></span>
             <span class="text-slate-700">${escapeHtml(b.text)}</span>
           </li>`).join('') + `</ul>` +
-        (unmatchedCnt ? `<p class="text-[11px] text-slate-400 mt-2.5">注：另有 ${unmatchedCnt} 部剧目尚未进入拆解库，未计入标签统计；标签维度全部来自竞品拆解清单。</p>` : '');
+        (unmatchedCnt ? `<p class="text-[11px] text-slate-400 mt-2.5">注：另有 ${unmatchedCnt} 部剧目尚未进入拆解库，未计入标签统计；完整频次数据见下方明细。</p>` : '');
 
-      // ---- 高频内容拆解卡片 ----
+      // ---- 高频内容明细（纯数据清单，与上方研判互不重复）----
       document.getElementById('rankInsightTitle').textContent =
         rankState.mode === 'day' ? '当日高频内容明细' : (rankState.mode === 'week' ? '近7天高频内容明细' : '近30天高频内容明细');
 
       document.getElementById('rankInsights').innerHTML = [
         {
-          kicker: '高频一级标签',
-          title: topP.length ? `TOP1：${topP[0][0]}（${topP[0][1]}部）` : '暂无匹配数据',
-          body: topP.length ? `TOP5：${topP.slice(0, 5).map(x => `${x[0]}(${x[1]})`).join('、')}。基于拆解库匹配的 ${matched.length} 部剧目统计。` : '榜单剧目均未进入拆解库。'
+          kicker: '一级标签频次明细',
+          title: topP.length ? `共 ${topP.length} 个一级题材` : '暂无匹配数据',
+          body: topP.length ? topP.slice(0, 8).map(x => `${x[0]} ${x[1]}部`).join('、') + (topP.length > 8 ? ` …等 ${topP.length} 个` : '') + `（基于拆解库匹配的 ${matched.length} 部剧目）` : '榜单剧目均未进入拆解库。'
         },
         {
-          kicker: '重点二级梗点',
-          title: topS.length ? `头号热梗：#${topS[0][0]}（${topS[0][1]}次）` : '暂无匹配数据',
-          body: topS.length ? `TOP8：${topS.slice(0, 8).map(x => `${x[0]}(${x[1]})`).join('、')}。` : '-'
+          kicker: '二级梗点频次明细',
+          title: topS.length ? `共 ${topS.length} 个二级梗点` : '暂无匹配数据',
+          body: topS.length ? topS.slice(0, 12).map(x => `#${x[0]}×${x[1]}`).join('、') + (topS.length > 12 ? ` …等 ${topS.length} 个` : '') : '-'
         },
         {
-          kicker: '平台结构',
-          title: topApps.length ? `${topApps[0][0]} 占 ${fmtPct(topApps[0][1], n)}` : '暂无 APP 数据',
-          body: topApps.length ? `头部平台：${topApps.map(x => `${x[0]}（${x[1]}部）`).join('、')}；共 ${appCnt} 个平台有剧目在榜。` : '-'
+          kicker: '平台在榜明细',
+          title: topApps.length ? `${appCnt} 个平台有剧在榜` : '暂无 APP 数据',
+          body: topApps.length ? topApps.map(x => `${x[0]} ${x[1]}部`).join('、') : '-'
         },
         {
-          kicker: '新老配比',
-          title: `新剧 ${newCnt} 部 · 老剧 ${n - newCnt} 部`,
-          body: `${newCnt >= n - newCnt ? '新剧供给活跃，市场处于上新驱动期。' : '老剧占据主要在榜位，存量内容生命力强。'}新剧占比 ${fmtPct(newCnt, n)}。`
+          kicker: '新老剧构成明细',
+          title: `新 ${newCnt} · 老 ${n - newCnt}（阈值：投放30天）`,
+          body: `新剧（≤30天）占比 ${fmtPct(newCnt, n)}，老剧（>30天）占比 ${fmtPct(n - newCnt, n)}。`
         },
         {
-          kicker: '🚀 新投黑马',
-          title: rocketCnt ? `${rocketCnt} 部黑马` : '暂无黑马',
-          body: rockets.length ? rockets.slice(0, 5).map(r => `${r.drama}（投放${r.daysNum}天，${r.app}）`).join('；') : '投放≤7天且进 TOP10 的剧目暂未出现。'
+          kicker: '🚀 新投黑马清单',
+          title: rocketCnt ? `${rocketCnt} 部` : '无',
+          body: rockets.length ? rockets.slice(0, 6).map(r => `${r.drama}（投放${r.daysNum}天 · ${r.app} · TOP${r.rank}）`).join('；') : '本期无「投放≤7天且进 TOP10」的剧目。'
         },
         {
-          kicker: '🔁 常青在榜 · 热度水位',
+          kicker: '🔁 常青在榜清单 · 热度水位',
           title: repeatCnt ? `${repeatCnt} 部反复在榜` : '无反复在榜',
-          body: (evergreens.length ? `最稳剧目：${evergreens.map(r => `${r.drama}（${r.onDays}期）`).slice(0, 3).join('；')}。` : '') +
-            (avgHeat != null ? `平均热度 ${fmtBig(avgHeat)}，峰值 ${fmtBig(Math.max(...heats))}。` : '')
+          body: (evergreens.length ? evergreens.map(r => `${r.drama}（${r.onDays}期）`).join('、') + '。' : '') +
+            (avgHeat != null ? `平均热度 ${fmtBig(avgHeat)}，最高 ${fmtBig(Math.max(...heats))}。` : '')
         }
       ].map((ins, idx) => `
         <div class="p-4 rounded-xl bg-slate-50/90 border border-slate-200/80 ${idx === 4 ? 'md:col-span-2' : ''}">
