@@ -215,6 +215,21 @@
           <option value="NEW">新剧（投放 ≤ 30 天）</option>
           <option value="OLD">老剧（投放 &gt; 30 天）</option>
         </select>
+        <select id="rankAppFilter" class="px-3 py-2 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white">
+          <option value="ALL">全部 APP</option>
+        </select>
+        <select id="rankChannelFilter" class="px-3 py-2 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white">
+          <option value="ALL">全部频道</option>
+        </select>
+        <select id="rankPrimaryFilter" class="px-3 py-2 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white">
+          <option value="ALL">全部一级标签</option>
+        </select>
+        <select id="rankFlagFilter" class="px-3 py-2 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white">
+          <option value="ALL">全部标识</option>
+          <option value="ROCKET">🚀 仅新投黑马</option>
+          <option value="REPEAT">🔁 仅反复在榜</option>
+          <option value="UNTAGGED">仅未拆解剧目</option>
+        </select>
         <input id="rankSearch" type="text" placeholder="搜索剧目 / 标签 / APP..."
           class="flex-1 min-w-[180px] px-3.5 py-2 text-xs sm:text-sm rounded-xl border border-slate-200 focus:border-indigo-500 outline-none" />
       </div>
@@ -254,19 +269,33 @@
         <div id="rankMoreWrap" class="mt-3 text-center"></div>
       </div>
 
-      <div class="card-surface p-5 sm:p-6 space-y-3">
-        <div class="flex items-center gap-2">
-          <span id="rankAnalysisBadge" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">当日复盘</span>
-          <h2 class="text-base sm:text-lg font-bold text-slate-900">榜单内容分析</h2>
+      <div class="card-surface p-5 sm:p-6 space-y-5">
+        <div>
+          <div class="flex items-center gap-2">
+            <span id="rankAnalysisBadge" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">当日复盘</span>
+            <h2 class="text-base sm:text-lg font-bold text-slate-900">榜单内容趋势分析</h2>
+          </div>
+          <p class="text-xs text-slate-500 mt-1">与上一周期对比的内容走向研判 · 二级梗点词云（字号=热度，点击跳检索库）</p>
         </div>
-        <p class="text-xs text-slate-500">研判结论：当前榜单结构意味着什么、建议如何跟进（数据明细见下方「高频内容明细」）</p>
-        <p id="rankNarrative" class="text-xs sm:text-sm text-slate-700 leading-relaxed"></p>
+
+        <div id="rankTrendBox"></div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-5">
+          <div class="lg:col-span-3">
+            <div class="text-xs font-bold text-slate-500 mb-2">🎯 二级梗点词云</div>
+            <div id="rankCloud" class="flex flex-wrap gap-x-3.5 gap-y-1 items-baseline content-center rounded-xl bg-slate-50/70 border border-slate-200/70 px-4 py-4 min-h-[150px]"></div>
+          </div>
+          <div class="lg:col-span-2">
+            <div class="text-xs font-bold text-slate-500 mb-2">研判结论</div>
+            <ul id="rankNarrative" class="space-y-2"></ul>
+          </div>
+        </div>
       </div>
 
       <div class="card-surface p-5 sm:p-6">
-        <h2 id="rankInsightTitle" class="text-base font-bold text-slate-900 mb-1">高频内容明细</h2>
-        <p class="text-xs text-slate-500 mb-4">数据明细：完整频次清单与具体剧目，仅列事实不做研判；标签维度取自竞品拆解库（未拆解剧目不参与标签统计）</p>
-        <div id="rankInsights" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        <h2 id="rankInsightTitle" class="text-base font-bold text-slate-900 mb-1">补充明细</h2>
+        <p class="text-xs text-slate-500 mb-4">仅保留词云与研判未覆盖的平台结构、新老构成与特殊剧目清单</p>
+        <div id="rankInsights" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
       </div>
     </section>
     <section id="tab-tags" class="hidden space-y-5">
@@ -853,7 +882,7 @@
     });
 
     const RANKING_DATA = [{"date":"2026-11-24","app":"NetShort","drama":"The Dragon's Silly Captive","rank":1,"daysNum":37,"heat":198655,"show":1076886794,"aigc":"AIGC","creative":"1867","isOld":true,"rocket":false,"repeat":4},{"date":"2026-11-24","app":"NetShort","drama":"HORROR GAME: SEDUCE MY GHOST TEACHER OR DIE","rank":2,"daysNum":130,"heat":142923,"show":702670472,"aigc":"AIGC","creative":"488","isOld":true,"rocket":false,"repeat":4},{"date":"2026-11-24","app":"NetShort","drama":"False Weakling, True Power","rank":3,"daysNum":395,"heat":144907,"show":665796588,"aigc":"AIGC","creative":"403","isOld":true,"rocket":false,"repeat":4},{"date":"2026-11-24","app":"NetShort","drama":"THE HIDDEN QUEEN: MY HUSBAND'S MISTRESS RUINED MY EMPIRE","rank":4,"daysNum":135,"heat":99351,"show":617999613,"aigc":"非 AIGC","creative":"291","isOld":true,"rocket":false,"repeat":4},{"date":"2026-11-24","app":"FlickReels","drama":"Reborn as a Condemned Bride, I Chose the Future Dragon King","rank":5,"daysNum":36,"heat":256352,"show":589734440,"aigc":"AIGC","creative":"4237","isOld":true,"rocket":false,"repeat":3},{"date":"2026-11-24","app":"DramaBox","drama":"He Broke the Heart That Saved Him","rank":6,"daysNum":103,"heat":243814,"show":578678967,"aigc":"AIGC","creative":"489","isOld":true,"rocket":false,"repeat":4},{"date":"2026-11-24","app":"DramaBox","drama":"Step Back! Im the Hidden King","rank":7,"daysNum":154,"heat":320905,"show":554978225,"aigc":"AIGC","creative":"450","isOld":true,"rocket":false,"repeat":3},{"date":"2026-11-24","app":"NetShort","drama":"The Secret Behind the Family Portrait","rank":8,"daysNum":30,"heat":89972,"show":524920371,"aigc":"AIGC","creative":"951","isOld":false,"rocket":false,"repeat":2},{"date":"2026-11-24","app":"DramaBox","drama":"Tempest：The Last Mecha","rank":9,"daysNum":153,"heat":286076,"show":507027821,"aigc":"AIGC","creative":"403","isOld":true,"rocket":false,"repeat":2},{"date":"2026-11-24","app":"DramaBox","drama":"Poisoned by His Love","rank":10,"daysNum":92,"heat":234234,"show":474521954,"aigc":"AIGC","creative":"610","isOld":true,"rocket":false,"repeat":4},{"date":"2026-11-24","app":"NetShort","drama":"THE MAFIA BOSSES' Max-Level NANNY","rank":11,"daysNum":48,"heat":73005,"show":418492332,"aigc":"AIGC","creative":"528","isOld":true,"rocket":false,"repeat":2},{"date":"2026-11-24","app":"Kalos TV","drama":"Mr. CEO, You're Not Supposed to Fall for Me!","rank":12,"daysNum":27,"heat":69423,"show":411135537,"aigc":"AIGC","creative":"781","isOld":false,"rocket":false,"repeat":1},{"date":"2026-11-24","app":"NetShort","drama":"Big Mistake: Torturing The Hidden Billionaire","rank":13,"daysNum":31,"heat":76697,"show":400189240,"aigc":"AIGC","creative":"718","isOld":true,"rocket":false,"repeat":4},{"date":"2026-11-24","app":"NetShort","drama":"BROKEN ARM BROKEN BLOODLINE","rank":14,"daysNum":100,"heat":77606,"show":398056434,"aigc":"AIGC","creative":"411","isOld":true,"rocket":false,"repeat":3},{"date":"2026-11-24","app":"NetShort","drama":"The Rage of A Sniper Hero","rank":15,"daysNum":121,"heat":80622,"show":393015328,"aigc":"AIGC","creative":"315","isOld":true,"rocket":false,"repeat":4},{"date":"2026-11-24","app":"NetShort","drama":"WHEN HOUSEWIVES TURN DEADLY","rank":16,"daysNum":103,"heat":73820,"show":370641581,"aigc":"AIGC","creative":"288","isOld":true,"rocket":false,"repeat":3},{"date":"2026-11-24","app":"ReelShort","drama":"The Great and Powerful Genie","rank":17,"daysNum":133,"heat":126811,"show":341052457,"aigc":"AIGC","creative":"265","isOld":true,"rocket":false,"repeat":1},{"date":"2026-11-24","app":"DramaBox","drama":"Step Back! I'm the Hidden King","rank":18,"daysNum":153,"heat":185058,"show":330434831,"aigc":"AIGC","creative":"319","isOld":true,"rocket":false,"repeat":3},{"date":"2026-11-24","app":"DramaBox","drama":"Kneel Before The Dragon Queen","rank":19,"daysNum":90,"heat":145013,"show":319561450,"aigc":"AIGC","creative":"328","isOld":true,"rocket":false,"repeat":2},{"date":"2026-11-24","app":"DramaBox","drama":"My Safe Haven in a Frozen World","rank":20,"daysNum":142,"heat":180692,"show":268305328,"aigc":"AIGC","creative":"369","isOld":true,"rocket":false,"repeat":2},{"date":"2026-11-24","app":"DramaShorts","drama":"The Billionaire and the Mafia Boss's Daughter","rank":21,"daysNum":36,"heat":401998,"show":230283733,"aigc":"非 AIGC","creative":"7185","isOld":true,"rocket":false,"repeat":2},{"date":"2026-11-24","app":"DramaWave","drama":"Forced to be Helen of Troy","rank":22,"daysNum":7,"heat":223629,"show":98858780,"aigc":"-","creative":"4190","isOld":false,"rocket":false,"repeat":1},{"date":"2026-11-24","app":"FlickReels","drama":"The Hospital Cut My Bonus—Now They're Begging Me to Stay","rank":23,"daysNum":10,"heat":111077,"show":92321304,"aigc":"-","creative":"2158","isOld":false,"rocket":false,"repeat":1},{"date":"2026-11-24","app":"FlickReels","drama":"Move Over! The Prison King Is Home","rank":24,"daysNum":15,"heat":186991,"show":91690648,"aigc":"-","creative":"3646","isOld":false,"rocket":false,"repeat":1},{"date":"2026-11-24","app":"FlickReels","drama":"Called a Jinx, Now the Billionaire's Little Lucky Star","rank":25,"daysNum":13,"heat":127750,"show":91490015,"aigc":"-","creative":"2418","isOld":false,"rocket":false,"repeat":1},{"date":"2026-11-24","app":"NetShort","drama":"Shattering the Scheme of Ungrateful Daughter","rank":26,"daysNum":10,"heat":108836,"show":86376467,"aigc":"-","creative":"2078","isOld":false,"rocket":false,"repeat":1},{"date":"2026-11-23","app":"NetShort","drama":"The Dragon's Silly Captive","rank":1,"daysNum":36,"heat":159626,"show":872541355,"aigc":"AIGC","creative":"1415","isOld":true,"rocket":false,"repeat":4},{"date":"2026-11-23","app":"NetShort","drama":"THE HIDDEN QUEEN: MY HUSBAND'S MISTRESS RUINED MY EMPIRE","rank":2,"daysNum":134,"heat":111484,"show":685786238,"aigc":"非 AIGC","creative":"311","isOld":true,"rocket":false,"repeat":4},{"date":"2026-11-23","app":"NetShort","drama":"False Weakling, True Power","rank":3,"daysNum":394,"heat":120873,"show":596473459,"aigc":"AIGC","creative":"309","isOld":true,"rocket":false,"repeat":4},{"date":"2026-11-23","app":"DramaBox","drama":"He Broke the Heart That Saved Him","rank":4,"daysNum":102,"heat":248771,"show":582931539,"aigc":"AIGC","creative":"526","isOld":true,"rocket":false,"repeat":4},{"date":"2026-11-23","app":"FlickReels","drama":"Reborn as a Condemned Bride, I Chose the Future Dragon King","rank":5,"daysNum":35,"heat":247653,"show":572955067,"aigc":"AIGC","creative":"4103","isOld":true,"rocket":false,"repeat":3},{"date":"2026-11-23","app":"DramaBox","drama":"Poisoned by His Love","rank":6,"daysNum":91,"heat":262915,"show":547162600,"aigc":"AIGC","creative":"697","isOld":true,"rocket":false,"repeat":4},{"date":"2026-11-23","app":"iDrama","drama":"Trash No More: My Billionaire Dad Found Me","rank":7,"daysNum":72,"heat":99458,"show":475387013,"aigc":"AIGC","creative":"314","isOld":true,"rocket":false,"repeat":1},{"date":"2026-11-23","app":"NetShort","drama":"HORROR GAME: SEDUCE MY GHOST TEACHER OR DIE","rank":8,"daysNum":129,"heat":89016,"show":445873864,"aigc":"AIGC","creative":"279","isOld":true,"rocket":false,"repeat":4},{"date":"2026-11-23","app":"NetShort","drama":"The Rage of A Sniper Hero","rank":9,"daysNum":120,"heat":86322,"show":443426678,"aigc":"AIGC","creative":"242","isOld":true,"rocket":false,"repeat":4},{"date":"2026-11-23","app":"NetShort","drama":"WHEN HOUSEWIVES TURN DEADLY","rank":10,"daysNum":102,"heat":71310,"show":368417621,"aigc":"AIGC","creative":"306","isOld":true,"rocket":false,"repeat":3},{"date":"2026-11-23","app":"NetShort","drama":"Big Mistake: Torturing The Hidden Billionaire","rank":11,"daysNum":30,"heat":69119,"show":361201865,"aigc":"AIGC","creative":"680","isOld":false,"rocket":false,"repeat":4},{"date":"2026-11-23","app":"DramaShorts","drama":"The Billionaire and the Mafia Boss's Daughter","rank":12,"daysNum":35,"heat":432519,"show":359945336,"aigc":"非 AIGC","creative":"7196","isOld":true,"rocket":false,"repeat":2},{"date":"2026-11-23","app":"DramaBox","drama":"My Weak Little Dog Is a Legendary Sky Lion","rank":13,"daysNum":97,"heat":163644,"show":359653840,"aigc":"AIGC","creative":"335","isOld":true,"rocket":false,"repeat":1},{"date":"2026-11-23","app":"DramaBox","drama":"Kneel Before The Dragon Queen","rank":14,"daysNum":89,"heat":165321,"show":356912541,"aigc":"AIGC","creative":"371","isOld":true,"rocket":false,"repeat":2},{"date":"2026-11-23","app":"DramaBox","drama":"My Safe Haven in a Frozen World","rank":15,"daysNum":141,"heat":219299,"show":339682285,"aigc":"AIGC","creative":"345","isOld":true,"rocket":false,"repeat":2},{"date":"2026-11-17","app":"NetShort","drama":"The Dragon's Silly Captive","rank":1,"daysNum":30,"heat":247685,"show":1208646102,"aigc":"AIGC","creative":"2762","isOld":false,"rocket":false,"repeat":4},{"date":"2026-11-17","app":"NetShort","drama":"THE HIDDEN QUEEN: MY HUSBAND'S MISTRESS RUINED MY EMPIRE","rank":2,"daysNum":128,"heat":185368,"show":1103709938,"aigc":"非 AIGC","creative":"607","isOld":true,"rocket":false,"repeat":4},{"date":"2026-11-17","app":"NetShort","drama":"False Weakling, True Power","rank":3,"daysNum":388,"heat":225094,"show":1046620970,"aigc":"AIGC","creative":"765","isOld":true,"rocket":false,"repeat":4},{"date":"2026-11-17","app":"LumiDrama","drama":"The secret that cannot be told","rank":4,"daysNum":145,"heat":305932,"show":969614086,"aigc":"AIGC","creative":"4650","isOld":true,"rocket":false,"repeat":2},{"date":"2026-11-17","app":"NetShort","drama":"HORROR GAME: SEDUCE MY GHOST TEACHER OR DIE","rank":5,"daysNum":123,"heat":162081,"show":799431225,"aigc":"AIGC","creative":"592","isOld":true,"rocket":false,"repeat":4},{"date":"2026-11-17","app":"DramaBox","drama":"Poisoned by His Love","rank":6,"daysNum":85,"heat":311333,"show":694482801,"aigc":"AIGC","creative":"812","isOld":true,"rocket":false,"repeat":4},{"date":"2026-11-17","app":"NetShort","drama":"BROKEN ARM BROKEN BLOODLINE","rank":7,"daysNum":93,"heat":129532,"show":690160394,"aigc":"AIGC","creative":"435","isOld":true,"rocket":false,"repeat":3},{"date":"2026-11-17","app":"NetShort","drama":"The Rage of A Sniper Hero","rank":8,"daysNum":114,"heat":134661,"show":678208766,"aigc":"AIGC","creative":"462","isOld":true,"rocket":false,"repeat":4},{"date":"2026-11-17","app":"DramaBox","drama":"He Broke the Heart That Saved Him","rank":9,"daysNum":96,"heat":283954,"show":667547113,"aigc":"AIGC","creative":"732","isOld":true,"rocket":false,"repeat":4},{"date":"2026-11-17","app":"NetShort","drama":"Big Mistake: Torturing The Hidden Billionaire","rank":10,"daysNum":24,"heat":113154,"show":536370224,"aigc":"AIGC","creative":"1295","isOld":false,"rocket":false,"repeat":4},{"date":"2026-11-17","app":"DramaBox","drama":"Step Back! Im the Hidden King","rank":11,"daysNum":147,"heat":324513,"show":533495376,"aigc":"AIGC","creative":"470","isOld":true,"rocket":false,"repeat":3},{"date":"2026-11-17","app":"FlickReels","drama":"Reborn as a Condemned Bride, I Chose the Future Dragon King","rank":12,"daysNum":29,"heat":263852,"show":528290277,"aigc":"AIGC","creative":"4533","isOld":false,"rocket":false,"repeat":3},{"date":"2026-11-17","app":"DramaBox","drama":"Forbidden Fling With My Bestie's Dad","rank":13,"daysNum":77,"heat":241628,"show":528105669,"aigc":"非 AIGC","creative":"814","isOld":true,"rocket":false,"repeat":1},{"date":"2026-11-15","app":"NetShort","drama":"The Dragon's Silly Captive","rank":1,"daysNum":28,"heat":265075,"show":1260817945,"aigc":"AIGC","creative":"3115","isOld":false,"rocket":false,"repeat":4},{"date":"2026-11-15","app":"LumiDrama","drama":"The secret that cannot be told","rank":2,"daysNum":143,"heat":436231,"show":1248543224,"aigc":"AIGC","creative":"6989","isOld":true,"rocket":false,"repeat":2},{"date":"2026-11-15","app":"NetShort","drama":"False Weakling, True Power","rank":3,"daysNum":386,"heat":215990,"show":995456803,"aigc":"AIGC","creative":"664","isOld":true,"rocket":false,"repeat":4},{"date":"2026-11-15","app":"NetShort","drama":"THE HIDDEN QUEEN: MY HUSBAND'S MISTRESS RUINED MY EMPIRE","rank":4,"daysNum":126,"heat":182776,"show":954619244,"aigc":"非 AIGC","creative":"991","isOld":true,"rocket":false,"repeat":4},{"date":"2026-11-15","app":"NetShort","drama":"HORROR GAME: SEDUCE MY GHOST TEACHER OR DIE","rank":5,"daysNum":121,"heat":173559,"show":867702826,"aigc":"AIGC","creative":"575","isOld":true,"rocket":false,"repeat":4},{"date":"2026-11-15","app":"NetShort","drama":"BROKEN ARM BROKEN BLOODLINE","rank":6,"daysNum":91,"heat":148998,"show":776725059,"aigc":"AIGC","creative":"538","isOld":true,"rocket":false,"repeat":3},{"date":"2026-11-15","app":"NetShort","drama":"The Rage of A Sniper Hero","rank":7,"daysNum":112,"heat":130704,"show":673843060,"aigc":"AIGC","creative":"403","isOld":true,"rocket":false,"repeat":4},{"date":"2026-11-15","app":"DramaBox","drama":"He Broke the Heart That Saved Him","rank":8,"daysNum":94,"heat":336761,"show":667096580,"aigc":"AIGC","creative":"1801","isOld":true,"rocket":false,"repeat":4},{"date":"2026-11-15","app":"DramaBox","drama":"Step Back! Im the Hidden King","rank":9,"daysNum":145,"heat":367342,"show":610151450,"aigc":"AIGC","creative":"581","isOld":true,"rocket":false,"repeat":3},{"date":"2026-11-15","app":"NetShort","drama":"Big Mistake: Torturing The Hidden Billionaire","rank":10,"daysNum":22,"heat":137396,"show":570371905,"aigc":"AIGC","creative":"1786","isOld":false,"rocket":false,"repeat":4},{"date":"2026-11-15","app":"DramaBox","drama":"Poisoned by His Love","rank":11,"daysNum":83,"heat":245044,"show":568051100,"aigc":"AIGC","creative":"663","isOld":true,"rocket":false,"repeat":4},{"date":"2026-11-15","app":"NetShort","drama":"I Am the Prey of Three Alphas","rank":12,"daysNum":123,"heat":113034,"show":551536059,"aigc":"AIGC","creative":"388","isOld":true,"rocket":false,"repeat":1},{"date":"2026-11-15","app":"NetShort","drama":"SSS-Rank: The Slum-Born Thunder God","rank":13,"daysNum":91,"heat":105695,"show":543284075,"aigc":"AIGC","creative":"443","isOld":true,"rocket":false,"repeat":1},{"date":"2026-11-15","app":"NetShort","drama":"LONE SNIPER: A VENGEANCE SHOT","rank":14,"daysNum":138,"heat":110945,"show":539416341,"aigc":"非 AIGC","creative":"294","isOld":true,"rocket":false,"repeat":1},{"date":"2026-11-15","app":"DramaBox","drama":"Tempest：The Last Mecha","rank":15,"daysNum":144,"heat":317286,"show":529732994,"aigc":"AIGC","creative":"529","isOld":true,"rocket":false,"repeat":2},{"date":"2026-11-15","app":"NetShort","drama":"The Husband Swap Game","rank":16,"daysNum":329,"heat":113131,"show":506631697,"aigc":"AIGC","creative":"418","isOld":true,"rocket":false,"repeat":1},{"date":"2026-11-15","app":"NetShort","drama":"WHEN HOUSEWIVES TURN DEADLY","rank":17,"daysNum":94,"heat":99373,"show":505776617,"aigc":"AIGC","creative":"401","isOld":true,"rocket":false,"repeat":3},{"date":"2026-11-15","app":"NetShort","drama":"The Secret Behind the Family Portrait","rank":18,"daysNum":21,"heat":152060,"show":503870696,"aigc":"AIGC","creative":"2372","isOld":false,"rocket":false,"repeat":2},{"date":"2026-11-15","app":"NetShort","drama":"THE MAFIA BOSSES' Max-Level NANNY","rank":19,"daysNum":39,"heat":86711,"show":488618819,"aigc":"AIGC","creative":"743","isOld":true,"rocket":false,"repeat":2}];
-    let rankState = { mode: 'day', date: null, age: 'ALL', q: '', sortKey: 'default', sortDir: 'desc', expanded: false };
+    let rankState = { mode: 'day', date: null, age: 'ALL', q: '', app: 'ALL', channel: 'ALL', primary: 'ALL', flag: 'ALL', sortKey: 'default', sortDir: 'desc', expanded: false };
 
     function rankNorm(s) { return String(s || '').toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]/g, ''); }
     function rankNum(v) { const n = Number(v); return (v !== null && v !== undefined && v !== '' && !isNaN(n)) ? n : null; }
@@ -868,6 +897,7 @@
       if (!RANK_TAG_MAP[n]) RANK_TAG_MAP[n] = {
         id: d.id,
         primary: String(d['一级标签'] || '').trim(),
+        channel: String(d['频道'] || '').trim() || '未标注',
         sec: parseSecondaryTags(d['二级标签'])
       };
     });
@@ -905,14 +935,13 @@
 
     const RANK_PAGE_SIZE = 15;
 
-    function getRankRows() {
-      const dates = rankDateList();
-      if (rankState.mode === 'day') {
-        return RANKING_DATA.filter(e => e.date === rankState.date)
+    function aggRows(mode, baseDate) {
+      if (mode === 'day') {
+        return RANKING_DATA.filter(e => e.date === baseDate)
           .map(e => ({ ...e, onDays: 1, bestRank: e.rank, heatV: rankNum(e.heat), showV: rankNum(e.show) }));
       }
-      const win = rankState.mode === 'week' ? 7 : 30;
-      const inRange = RANKING_DATA.filter(e => { const g = dayDiff(rankState.date, e.date); return g >= 0 && g < win; });
+      const win = mode === 'week' ? 7 : 30;
+      const inRange = RANKING_DATA.filter(e => { const g = dayDiff(baseDate, e.date); return g >= 0 && g < win; });
       const groups = new Map();
       inRange.forEach(e => {
         const n = rankNorm(e.drama);
@@ -936,6 +965,14 @@
       }));
     }
 
+    function shiftDate(d, days) {
+      const t = new Date(d + 'T00:00:00Z');
+      t.setUTCDate(t.getUTCDate() + days);
+      return t.toISOString().slice(0, 10);
+    }
+
+    function getRankRows() { return aggRows(rankState.mode, rankState.date); }
+
     function renderRank() {
       if (!rankState.date) initRankControls();
       const rows = getRankRows();
@@ -943,12 +980,29 @@
       const periodDates = rankState.mode === 'day' ? [rankState.date]
         : rankDateList().filter(d => { const g = dayDiff(rankState.date, d); return g >= 0 && g < totalPeriodDays; });
 
+      // 动态填充筛选下拉（APP/频道/一级标签，基于当前周期在榜剧目）
+      const fillSel = (id, items, cur) => {
+        const el = document.getElementById(id);
+        el.innerHTML = '<option value="ALL">' + el.options[0].text + '</option>' +
+          items.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+        el.value = items.includes(cur) ? cur : 'ALL';
+      };
+      fillSel('rankAppFilter', [...new Set(rows.map(r => r.app).filter(Boolean))].sort(), rankState.app);
+      fillSel('rankChannelFilter', [...new Set(rows.map(r => rankTagInfo(r)).filter(Boolean).map(t => t.channel))].sort(), rankState.channel);
+      fillSel('rankPrimaryFilter', [...new Set(rows.map(r => rankTagInfo(r)).filter(Boolean).map(t => t.primary).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'zh')), rankState.primary);
+
       const filtered = rows.filter(r => {
         if (rankState.age === 'NEW' && r.isOld) return false;
         if (rankState.age === 'OLD' && !r.isOld) return false;
+        if (rankState.app !== 'ALL' && r.app !== rankState.app) return false;
+        const tinfo = rankTagInfo({ drama: r.drama });
+        if (rankState.primary !== 'ALL' && (!tinfo || tinfo.primary !== rankState.primary)) return false;
+        if (rankState.channel !== 'ALL' && (!tinfo || tinfo.channel !== rankState.channel)) return false;
+        if (rankState.flag === 'ROCKET' && !r.rocket) return false;
+        if (rankState.flag === 'REPEAT' && r.onDays < 2) return false;
+        if (rankState.flag === 'UNTAGGED' && tinfo) return false;
         if (rankState.q) {
-          const t = rankTagInfo({ drama: r.drama });
-          const hay = [r.drama, r.app, t ? t.primary : '', t ? t.sec.join(' ') : ''].join(' ').toLowerCase();
+          const hay = [r.drama, r.app, tinfo ? tinfo.primary : '', tinfo ? tinfo.sec.join(' ') : ''].join(' ').toLowerCase();
           if (!hay.includes(rankState.q)) return false;
         }
         return true;
@@ -1072,103 +1126,158 @@
         : `近${rankState.mode === 'week' ? 7 : 30}天（${periodDates[0]} ~ ${periodDates[periodDates.length - 1]}，${periodDates.length} 个榜单日期）`;
       const noRocketWord = rankState.mode === 'day' ? '当日' : '区间内';
 
-      // ---- 榜单内容分析（只输出研判结论，不重复罗列明细）----
+      // ---- 上一周期数据（趋势对比基准）----
+      const datesAll = rankDateList();
+      let prevLabel = null, prevRows = null;
+      if (rankState.mode === 'day') {
+        const idx = datesAll.indexOf(rankState.date);
+        if (idx > 0) {
+          const pd = datesAll[idx - 1];
+          prevLabel = pd + ' 当日';
+          prevRows = aggRows('day', pd);
+        }
+      } else {
+        const win = rankState.mode === 'week' ? 7 : 30;
+        const prevBase = shiftDate(rankState.date, -win);
+        const prevDates = datesAll.filter(d => { const g = dayDiff(prevBase, d); return g >= 0 && g < win; });
+        if (prevDates.length) {
+          prevLabel = prevDates[0] + ' ~ ' + prevDates[prevDates.length - 1];
+          prevRows = aggRows(rankState.mode, prevBase);
+        }
+      }
+
+      const curTagCnt = {}, prevTagCnt = {};
+      matched.forEach(({ t }) => { if (t.primary) curTagCnt[t.primary] = (curTagCnt[t.primary] || 0) + 1; });
+      if (prevRows) prevRows.forEach(r => { const t = rankTagInfo(r); if (t && t.primary) prevTagCnt[t.primary] = (prevTagCnt[t.primary] || 0) + 1; });
+
+      const curNames = new Set(rows.map(r => r.drama));
+      const prevNames = new Set((prevRows || []).map(r => r.drama));
+      const enteredCnt = [...curNames].filter(x => !prevNames.has(x)).length;
+      const droppedCnt = [...prevNames].filter(x => !curNames.has(x)).length;
+      const prevHeats = (prevRows || []).map(r => r.heatV).filter(x => x != null);
+      const prevAvgHeat = prevHeats.length ? Math.round(prevHeats.reduce((a, b) => a + b, 0) / prevHeats.length) : null;
+      const prevN = prevRows ? prevRows.length : null;
+
+      const arrow = d => d > 0 ? '<span style="color:#DC2626">▲+' + d + '</span>' : (d < 0 ? '<span style="color:#16A34A">▼' + d + '</span>' : '<span style="color:#94A3B8">—</span>');
+
+      // ---- 周期对比块 ----
+      const trendEl = document.getElementById('rankTrendBox');
+      if (!prevRows) {
+        trendEl.innerHTML = '<div class="rounded-xl border border-slate-200/80 bg-slate-50/60 p-4 text-xs text-slate-500">当前基准日期之前暂无榜单数据，切到更晚的日期或周期模式即可看到趋势对比。</div>';
+      } else {
+        const trendTags = Object.entries(curTagCnt).map(([p, c]) => ({ p, c, prev: prevTagCnt[p] || 0 }))
+          .concat(Object.entries(prevTagCnt).filter(([p]) => !(p in curTagCnt)).map(([p, c]) => ({ p, c: 0, prev: c })))
+          .sort((a, b) => (b.c + b.prev) - (a.c + a.prev)).slice(0, 8);
+        const maxC = Math.max(...trendTags.map(x => Math.max(x.c, x.prev)), 1);
+        const newCntPrev = prevRows.filter(r => !r.isOld).length;
+        const chips = [
+          ['在榜剧目', prevN + ' → ' + n, n - prevN],
+          ['新剧占比', fmtPct(newCntPrev, prevN) + ' → ' + fmtPct(newCnt, n), null],
+          ['平均热度', fmtBig(prevAvgHeat) + ' → ' + fmtBig(avgHeat), (avgHeat != null && prevAvgHeat != null) ? avgHeat - prevAvgHeat : null],
+          ['新进榜 / 掉榜', enteredCnt + ' / ' + droppedCnt, null]
+        ];
+        trendEl.innerHTML = '<div class="rounded-xl border border-slate-200/80 bg-slate-50/60 p-4">' +
+          '<div class="flex flex-wrap items-center gap-x-3 gap-y-1.5 mb-3">' +
+          '<span class="text-xs font-bold text-indigo-700 whitespace-nowrap">📈 题材周期对比</span>' +
+          '<span class="text-[11px] text-slate-500 whitespace-nowrap">' + escapeHtml(prevLabel) + ' vs ' + escapeHtml(scopeLabel) + '（柱长=在榜剧数）</span>' +
+          '</div><div class="space-y-1.5">' +
+          trendTags.map(x => '<div class="flex items-center gap-2 text-xs">' +
+            '<span class="w-28 sm:w-36 shrink-0 truncate font-semibold text-slate-800">' + escapeHtml(x.p) + '</span>' +
+            '<span class="flex-1 h-2.5 rounded-full bg-white border border-slate-200 overflow-hidden"><span class="block h-full rounded-full transition-all" style="width:' + Math.round(x.c / maxC * 100) + '%;background:#4F46E5"></span></span>' +
+            '<span class="tabular-nums text-slate-500 w-16 text-right shrink-0">' + x.prev + '→<b class="text-slate-800">' + x.c + '</b></span>' +
+            '<span class="w-12 text-right tabular-nums font-semibold shrink-0">' + arrow(x.c - x.prev) + '</span>' +
+          '</div>').join('') +
+          '</div><div class="flex flex-wrap gap-2 mt-3">' +
+          chips.map(c => '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-[11px] text-slate-600 whitespace-nowrap">' +
+            c[0] + ' <b class="tabular-nums text-slate-800">' + escapeHtml(String(c[1])) + '</b>' + (c[2] == null ? '' : ' ' + arrow(c[2])) + '</span>').join('') +
+          '</div></div>';
+      }
+
+      // ---- 二级梗点词云 ----
+      const secCntMap = {};
+      matched.forEach(({ t }) => t.sec.forEach(s => { secCntMap[s] = (secCntMap[s] || 0) + 1; }));
+      const cloudTags = Object.entries(secCntMap).sort((a, b) => b[1] - a[1]).slice(0, 45);
+      const cloudMax = cloudTags.length ? cloudTags[0][1] : 1;
+      const palette = ['#4F46E5', '#0D9488', '#D97706', '#DB2777', '#7C3AED', '#2563EB', '#0891B2'];
+      document.getElementById('rankCloud').innerHTML = cloudTags.length
+        ? cloudTags.map((x, i) => '<button data-cloud-tag="' + escapeHtml(x[0]) + '" title="#' + escapeHtml(x[0]) + '（' + x[1] + ' 部在榜）" class="hover:opacity-75 transition leading-tight" style="font-size:' + (13 + Math.round(19 * x[1] / cloudMax)) + 'px;color:' + palette[i % palette.length] + ';font-weight:' + (x[1] >= cloudMax * 0.6 ? 700 : 500) + '">#' + escapeHtml(x[0]) + '<sup class="text-[9px] text-slate-400 ml-0.5">' + x[1] + '</sup></button>').join('')
+        : '<span class="text-xs text-slate-400">当前筛选范围内没有已拆解剧目的二级标签</span>';
+      document.querySelectorAll('#rankCloud [data-cloud-tag]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          filters.search = btn.getAttribute('data-cloud-tag');
+          document.getElementById('searchInput').value = filters.search;
+          switchTab('explorer');
+        });
+      });
+
+      // ---- 研判结论（趋势导向，4条）----
       const matchedBase = matched.length || 1;
       const cr3Tag = topP.slice(0, 3).reduce((a, x) => a + x[1], 0);
-      const cr2App = topApps.slice(0, 2).reduce((a, x) => a + x[1], 0);
       const scopeShort = rankState.mode === 'day' ? '当日' : (rankState.mode === 'week' ? '近7天' : '近30天');
-
       const bullets = [];
       if (topP.length) {
+        let trendTxt = '';
+        if (prevRows) {
+          const rising = Object.keys(curTagCnt).filter(p => (curTagCnt[p] || 0) > (prevTagCnt[p] || 0))
+            .sort((a, b) => ((curTagCnt[b] - (prevTagCnt[b] || 0)) - (curTagCnt[a] - (prevTagCnt[a] || 0))));
+          const falling = Object.keys(prevTagCnt).filter(p => (curTagCnt[p] || 0) < (prevTagCnt[p] || 0));
+          const parts = [];
+          if (rising.length) parts.push('升温：' + rising.slice(0, 2).map(p => p + '（+' + (curTagCnt[p] - (prevTagCnt[p] || 0)) + '部）').join('、'));
+          if (falling.length) parts.push('降温：' + falling.slice(0, 2).map(p => p + '（' + (curTagCnt[p] - (prevTagCnt[p] || 0)) + '部）').join('、'));
+          trendTxt = parts.length ? '相比上一周期，' + parts.join('；') + '。' : '相比上一周期题材结构基本持平。';
+        }
         const concentrated = cr3Tag / matchedBase >= 0.5;
-        bullets.push({
-          icon: '🏷', label: '题材研判',
-          text: `在榜剧集中于 ${topP.length} 个一级题材，TOP3 合计占 ${fmtPct(cr3Tag, matched.length)}` +
-            (concentrated
-              ? `，集中度高——「${topP[0][0]}」为本${scopeShort}主赛道，选题/投放可优先跟进该方向。`
-              : `，题材较分散、无明显单一主赛道，可关注排名最高剧目的题材做参考。`)
-        });
-      }
-      if (topS.length) {
-        bullets.push({
-          icon: '🎯', label: '钩子研判',
-          text: `榜单内容的核心钩子集中在「#${topS[0][0]}」等 ${Math.min(topS.length, 8)} 个二级梗点，` +
-            `多部在榜剧同时叠加 2~3 个同类梗点——新剧立项时建议沿用该组钩子组合作为安全牌。`
-        });
+        bullets.push({ icon: '🏷', label: '题材趋势', text: 'TOP1「' + topP[0][0] + '」（' + topP[0][1] + '部），TOP3 合计占 ' + fmtPct(cr3Tag, matched.length) + (concentrated ? '，集中度高——选品可优先跟进头部赛道。' : '，题材较分散，可参考头部剧目方向。') + trendTxt });
       }
       bullets.push({
         icon: '🆕', label: '供给研判',
-        text: `新剧占 ${fmtPct(newCnt, n)}。` + (newCnt >= n * 0.4
-          ? `上新供给活跃，市场处于抢量期，新剧有较大突围窗口。`
-          : `老剧占据主要在榜位、生命周期长，新剧突围难度大，需靠强差异化的梗点组合切入。`)
+        text: '新剧占 ' + fmtPct(newCnt, n) + '。' + (newCnt >= n * 0.4
+          ? '上新供给活跃，市场处于抢量期，新剧有较大突围窗口。'
+          : '老剧占据主要在榜位、生命周期长，新剧突围需靠强差异化梗点组合切入。')
       });
       if (topApps.length) {
+        const cr2App = topApps.slice(0, 2).reduce((a, x) => a + x[1], 0);
         bullets.push({
           icon: '📱', label: '竞争研判',
-          text: `${topApps[0][0]} 以 ${fmtPct(topApps[0][1], n)} 的在榜份额领跑` +
-            (topApps[1] ? `，TOP2 平台合计 ${fmtPct(cr2App, n)}` : '') +
-            (cr2App / n >= 0.6 ? `，头部平台垄断明显，投放素材侧重点应向其主力题材倾斜。` : `，平台间竞争胶着，多平台同步铺量更稳妥。`)
+          text: topApps[0][0] + ' 以 ' + fmtPct(topApps[0][1], n) + ' 份额领跑' +
+            (topApps[1] ? '，TOP2 合计 ' + fmtPct(cr2App, n) : '') +
+            (cr2App / n >= 0.6 ? '，头部平台垄断明显，投放素材应向其主力题材倾斜。' : '，平台间竞争胶着，多平台同步铺量更稳妥。')
         });
       }
       {
         const watch = [];
-        if (rockets.length) watch.push(`🚀 黑马「${rockets.slice(0, 2).map(r => r.drama).join('」「')}」投放${rockets[0].daysNum}天即冲进 TOP10，其题材/钩子值得快速拆解跟进`);
-        if (evergreens.length) watch.push(`🔁 「${evergreens[0].drama}」已连续 ${evergreens[0].onDays} 期在榜，属稳定放量的常青剧，可作为对标样本`);
-        bullets.push({
-          icon: '⭐', label: '重点关注',
-          text: watch.length ? watch.join('；') + '。' : `${noRocketWord}暂无黑马与常青剧，建议下次调研关注新投放剧目的初期表现。`
-        });
+        if (rockets.length) watch.push('🚀 黑马「' + rockets.slice(0, 2).map(r => r.drama).join('」「') + '」投放' + rockets[0].daysNum + '天即冲进 TOP10，题材/钩子值得快速拆解跟进');
+        if (evergreens.length) watch.push('🔁 「' + evergreens[0].drama + '」已 ' + evergreens[0].onDays + ' 期在榜，属稳定放量的常青剧，可作对标样本');
+        bullets.push({ icon: '⭐', label: '重点关注', text: watch.length ? watch.join('；') + '。' : noRocketWord + '暂无黑马与常青剧，建议下次调研关注新投放剧目初期表现。' });
       }
 
       document.getElementById('rankAnalysisBadge').textContent =
         rankState.mode === 'day' ? '当日复盘' : (rankState.mode === 'week' ? '7日复盘' : '30日复盘');
-      document.getElementById('rankNarrative').innerHTML =
-        `<p class="text-sm font-bold text-slate-900 mb-2.5">${escapeHtml(scopeLabel)} · ${n} 部在榜 · 研判结论：</p>` +
-        `<ul class="space-y-2">` + bullets.map(b => `
+      document.getElementById('rankNarrative').innerHTML = bullets.map(b => `
           <li class="flex items-start gap-2 text-xs sm:text-sm leading-relaxed">
             <span class="shrink-0 font-bold text-slate-900 whitespace-nowrap">${b.icon} <span class="text-indigo-700">${escapeHtml(b.label)}</span></span>
             <span class="text-slate-700">${escapeHtml(b.text)}</span>
-          </li>`).join('') + `</ul>` +
-        (unmatchedCnt ? `<p class="text-[11px] text-slate-400 mt-2.5">注：另有 ${unmatchedCnt} 部剧目尚未进入拆解库，未计入标签统计；完整频次数据见下方明细。</p>` : '');
+          </li>`).join('') +
+        (unmatchedCnt ? '<li class="text-[11px] text-slate-400">注：另有 ' + unmatchedCnt + ' 部剧目尚未进入拆解库，未计入标签统计。</li>' : '');
 
-      // ---- 高频内容明细（纯数据清单，与上方研判互不重复）----
-      document.getElementById('rankInsightTitle').textContent =
-        rankState.mode === 'day' ? '当日高频内容明细' : (rankState.mode === 'week' ? '近7天高频内容明细' : '近30天高频内容明细');
-
+      // ---- 补充明细（精简为2张卡）----
+      document.getElementById('rankInsightTitle').textContent = '补充明细';
       document.getElementById('rankInsights').innerHTML = [
         {
-          kicker: '一级标签频次明细',
-          title: topP.length ? `共 ${topP.length} 个一级题材` : '暂无匹配数据',
-          body: topP.length ? topP.slice(0, 8).map(x => `${x[0]} ${x[1]}部`).join('、') + (topP.length > 8 ? ` …等 ${topP.length} 个` : '') + `（基于拆解库匹配的 ${matched.length} 部剧目）` : '榜单剧目均未进入拆解库。'
+          kicker: '平台 × 新老 × 热度水位',
+          title: topApps.length ? topApps[0][0] + ' 居首（' + topApps[0][1] + '部，' + fmtPct(topApps[0][1], n) + '）' : '暂无 APP 数据',
+          body: (topApps.length ? '平台在榜：' + topApps.map(x => x[0] + ' ' + x[1] + '部').join('、') + '；' : '') +
+            '新/老 = ' + newCnt + '/' + (n - newCnt) +
+            (avgHeat != null ? '；平均热度 ' + fmtBig(avgHeat) + '，最高 ' + fmtBig(Math.max(...heats)) + '。' : '。')
         },
         {
-          kicker: '二级梗点频次明细',
-          title: topS.length ? `共 ${topS.length} 个二级梗点` : '暂无匹配数据',
-          body: topS.length ? topS.slice(0, 12).map(x => `#${x[0]}×${x[1]}`).join('、') + (topS.length > 12 ? ` …等 ${topS.length} 个` : '') : '-'
-        },
-        {
-          kicker: '平台在榜明细',
-          title: topApps.length ? `${appCnt} 个平台有剧在榜` : '暂无 APP 数据',
-          body: topApps.length ? topApps.map(x => `${x[0]} ${x[1]}部`).join('、') : '-'
-        },
-        {
-          kicker: '新老剧构成明细',
-          title: `新 ${newCnt} · 老 ${n - newCnt}（阈值：投放30天）`,
-          body: `新剧（≤30天）占比 ${fmtPct(newCnt, n)}，老剧（>30天）占比 ${fmtPct(n - newCnt, n)}。`
-        },
-        {
-          kicker: '🚀 新投黑马清单',
-          title: rocketCnt ? `${rocketCnt} 部` : '无',
-          body: rockets.length ? rockets.slice(0, 6).map(r => `${r.drama}（投放${r.daysNum}天 · ${r.app} · TOP${r.rank}）`).join('；') : '本期无「投放≤7天且进 TOP10」的剧目。'
-        },
-        {
-          kicker: '🔁 常青在榜清单 · 热度水位',
-          title: repeatCnt ? `${repeatCnt} 部反复在榜` : '无反复在榜',
-          body: (evergreens.length ? evergreens.map(r => `${r.drama}（${r.onDays}期）`).join('、') + '。' : '') +
-            (avgHeat != null ? `平均热度 ${fmtBig(avgHeat)}，最高 ${fmtBig(Math.max(...heats))}。` : '')
+          kicker: '🚀 黑马清单 / 🔁 常青清单',
+          title: rocketCnt + ' 部黑马 · ' + repeatCnt + ' 部常青',
+          body: (rockets.length ? '黑马：' + rockets.slice(0, 5).map(r => r.drama + '（投放' + r.daysNum + '天 · TOP' + r.rank + '）').join('；') + '。' : '黑马：无。') +
+            (evergreens.length ? '常青：' + evergreens.map(r => r.drama + '（' + r.onDays + '期）').join('、') + '。' : '常青：无。')
         }
-      ].map((ins, idx) => `
-        <div class="p-4 rounded-xl bg-slate-50/90 border border-slate-200/80 ${idx === 4 ? 'md:col-span-2' : ''}">
+      ].map(ins => `
+        <div class="p-4 rounded-xl bg-slate-50/90 border border-slate-200/80">
           <div class="text-xs font-bold text-indigo-600 uppercase tracking-wider">${escapeHtml(ins.kicker)}</div>
           <div class="text-sm font-bold text-slate-900 mt-1">${escapeHtml(ins.title)}</div>
           <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">${escapeHtml(ins.body)}</p>
@@ -1291,6 +1400,10 @@
     }
     document.getElementById('tagSecSearch').addEventListener('input', e => { tagSecState.q = e.target.value; renderTagSummary(); });
 
+    document.getElementById('rankAppFilter').addEventListener('change', e => { rankState.app = e.target.value; rankState.expanded = false; renderRank(); });
+    document.getElementById('rankChannelFilter').addEventListener('change', e => { rankState.channel = e.target.value; rankState.expanded = false; renderRank(); });
+    document.getElementById('rankPrimaryFilter').addEventListener('change', e => { rankState.primary = e.target.value; rankState.expanded = false; renderRank(); });
+    document.getElementById('rankFlagFilter').addEventListener('change', e => { rankState.flag = e.target.value; rankState.expanded = false; renderRank(); });
     document.getElementById('rankDate').addEventListener('change', e => { rankState.date = e.target.value; rankState.expanded = false; renderRank(); });
     document.getElementById('ageFilter').addEventListener('change', e => { rankState.age = e.target.value; rankState.expanded = false; renderRank(); });
     document.getElementById('rankSearch').addEventListener('input', e => { rankState.q = e.target.value.trim().toLowerCase(); rankState.expanded = false; renderRank(); });
