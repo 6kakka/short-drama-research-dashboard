@@ -1193,14 +1193,26 @@
           '</div></div>';
       }
 
-      // ---- 二级梗点词云 ----
+      // ---- 二级梗点词云（彩色标签胶囊）----
       const secCntMap = {};
       matched.forEach(({ t }) => t.sec.forEach(s => { secCntMap[s] = (secCntMap[s] || 0) + 1; }));
-      const cloudTags = Object.entries(secCntMap).sort((a, b) => b[1] - a[1]).slice(0, 45);
+      const cloudTags = Object.entries(secCntMap).sort((a, b) => b[1] - a[1]).slice(0, 42);
       const cloudMax = cloudTags.length ? cloudTags[0][1] : 1;
-      const palette = ['#4F46E5', '#0D9488', '#D97706', '#DB2777', '#7C3AED', '#2563EB', '#0891B2'];
+      const CLOUD_COLORS = [
+        ['#EEF2FF', '#4338CA'], ['#F0FDFA', '#0F766E'], ['#FFF7ED', '#C2410C'],
+        ['#FDF2F8', '#BE185D'], ['#F5F3FF', '#6D28D9'], ['#EFF6FF', '#1D4ED8'],
+        ['#ECFEFF', '#0E7490'], ['#FEFCE8', '#A16207']
+      ];
       document.getElementById('rankCloud').innerHTML = cloudTags.length
-        ? cloudTags.map((x, i) => '<button data-cloud-tag="' + escapeHtml(x[0]) + '" title="#' + escapeHtml(x[0]) + '（' + x[1] + ' 部在榜）" class="hover:opacity-75 transition leading-tight" style="font-size:' + (13 + Math.round(19 * x[1] / cloudMax)) + 'px;color:' + palette[i % palette.length] + ';font-weight:' + (x[1] >= cloudMax * 0.6 ? 700 : 500) + '">#' + escapeHtml(x[0]) + '<sup class="text-[9px] text-slate-400 ml-0.5">' + x[1] + '</sup></button>').join('')
+        ? cloudTags.map((x, i) => {
+            const [bg, fg] = CLOUD_COLORS[i % CLOUD_COLORS.length];
+            const fs = 12 + Math.round(12 * x[1] / cloudMax);
+            return '<button data-cloud-tag="' + escapeHtml(x[0]) + '" title="#' + escapeHtml(x[0]) + '（' + x[1] + ' 部在榜）· 点击到检索库查看" ' +
+              'class="inline-flex items-baseline gap-1 rounded-full border transition hover:-translate-y-0.5 hover:shadow-sm px-2.5 py-1 leading-none" ' +
+              'style="font-size:' + fs + 'px;background:' + bg + ';color:' + fg + ';border-color:' + fg + '22;font-weight:' + (x[1] >= cloudMax * 0.55 ? 700 : 500) + '">' +
+              '#' + escapeHtml(x[0]) +
+              '<span class="rounded-full bg-white/80 tabular-nums" style="font-size:9px;color:' + fg + ';padding:1px 5px;font-weight:700">' + x[1] + '</span></button>';
+          }).join('')
         : '<span class="text-xs text-slate-400">当前筛选范围内没有已拆解剧目的二级标签</span>';
       document.querySelectorAll('#rankCloud [data-cloud-tag]').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -1210,7 +1222,7 @@
         });
       });
 
-      // ---- 研判结论（趋势导向，4条）----
+      // ---- 研判结论（彩色重点标识，趋势导向）----
       const matchedBase = matched.length || 1;
       const cr3Tag = topP.slice(0, 3).reduce((a, x) => a + x[1], 0);
       const scopeShort = rankState.mode === 'day' ? '当日' : (rankState.mode === 'week' ? '近7天' : '近30天');
@@ -1222,67 +1234,119 @@
             .sort((a, b) => ((curTagCnt[b] - (prevTagCnt[b] || 0)) - (curTagCnt[a] - (prevTagCnt[a] || 0))));
           const falling = Object.keys(prevTagCnt).filter(p => (curTagCnt[p] || 0) < (prevTagCnt[p] || 0));
           const parts = [];
-          if (rising.length) parts.push('升温：' + rising.slice(0, 2).map(p => p + '（+' + (curTagCnt[p] - (prevTagCnt[p] || 0)) + '部）').join('、'));
-          if (falling.length) parts.push('降温：' + falling.slice(0, 2).map(p => p + '（' + (curTagCnt[p] - (prevTagCnt[p] || 0)) + '部）').join('、'));
-          trendTxt = parts.length ? '相比上一周期，' + parts.join('；') + '。' : '相比上一周期题材结构基本持平。';
+          if (rising.length) parts.push('升温 ' + rising.slice(0, 2).map(p => '<b class="text-rose-600">' + escapeHtml(p) + ' +' + (curTagCnt[p] - (prevTagCnt[p] || 0)) + '部</b>').join('、'));
+          if (falling.length) parts.push('降温 ' + falling.slice(0, 2).map(p => '<b class="text-emerald-600">' + escapeHtml(p) + ' ' + (curTagCnt[p] - (prevTagCnt[p] || 0)) + '部</b>').join('、'));
+          trendTxt = parts.length ? '相比上一周期：' + parts.join('；') + '。' : '相比上一周期题材结构基本持平。';
         }
         const concentrated = cr3Tag / matchedBase >= 0.5;
-        bullets.push({ icon: '🏷', label: '题材趋势', text: 'TOP1「' + topP[0][0] + '」（' + topP[0][1] + '部），TOP3 合计占 ' + fmtPct(cr3Tag, matched.length) + (concentrated ? '，集中度高——选品可优先跟进头部赛道。' : '，题材较分散，可参考头部剧目方向。') + trendTxt });
+        bullets.push({
+          icon: '🏷', label: '题材趋势', color: '#4F46E5', bg: '#EEF2FF',
+          text: 'TOP1 <b class="text-indigo-700">' + escapeHtml(topP[0][0]) + '</b>（' + topP[0][1] + '部），TOP3 合计占 <b class="text-indigo-700">' + fmtPct(cr3Tag, matched.length) + '</b>' + (concentrated ? '，集中度高——选品可优先跟进头部赛道。' : '，题材较分散，可参考头部剧目方向。') + trendTxt
+        });
       }
       bullets.push({
-        icon: '🆕', label: '供给研判',
-        text: '新剧占 ' + fmtPct(newCnt, n) + '。' + (newCnt >= n * 0.4
-          ? '上新供给活跃，市场处于抢量期，新剧有较大突围窗口。'
-          : '老剧占据主要在榜位、生命周期长，新剧突围需靠强差异化梗点组合切入。')
+        icon: '🆕', label: '供给研判', color: '#0D9488', bg: '#F0FDFA',
+        text: '新剧占 <b class="text-teal-700">' + fmtPct(newCnt, n) + '</b>。' + (newCnt >= n * 0.4
+          ? '上新供给活跃，市场处于<b class="text-teal-700">抢量期</b>，新剧有较大突围窗口。'
+          : '老剧占据主要在榜位、生命周期长，新剧突围需靠<b class="text-teal-700">强差异化梗点组合</b>切入。')
       });
       if (topApps.length) {
         const cr2App = topApps.slice(0, 2).reduce((a, x) => a + x[1], 0);
         bullets.push({
-          icon: '📱', label: '竞争研判',
-          text: topApps[0][0] + ' 以 ' + fmtPct(topApps[0][1], n) + ' 份额领跑' +
-            (topApps[1] ? '，TOP2 合计 ' + fmtPct(cr2App, n) : '') +
+          icon: '📱', label: '竞争研判', color: '#D97706', bg: '#FFF7ED',
+          text: '<b class="text-amber-700">' + escapeHtml(topApps[0][0]) + '</b> 以 <b class="text-amber-700">' + fmtPct(topApps[0][1], n) + '</b> 份额领跑' +
+            (topApps[1] ? '，TOP2 合计 <b class="text-amber-700">' + fmtPct(cr2App, n) + '</b>' : '') +
             (cr2App / n >= 0.6 ? '，头部平台垄断明显，投放素材应向其主力题材倾斜。' : '，平台间竞争胶着，多平台同步铺量更稳妥。')
         });
       }
       {
         const watch = [];
-        if (rockets.length) watch.push('🚀 黑马「' + rockets.slice(0, 2).map(r => r.drama).join('」「') + '」投放' + rockets[0].daysNum + '天即冲进 TOP10，题材/钩子值得快速拆解跟进');
-        if (evergreens.length) watch.push('🔁 「' + evergreens[0].drama + '」已 ' + evergreens[0].onDays + ' 期在榜，属稳定放量的常青剧，可作对标样本');
-        bullets.push({ icon: '⭐', label: '重点关注', text: watch.length ? watch.join('；') + '。' : noRocketWord + '暂无黑马与常青剧，建议下次调研关注新投放剧目初期表现。' });
+        if (rockets.length) watch.push('黑马 <b class="text-rose-600">' + rockets.slice(0, 2).map(r => escapeHtml(r.drama)).join('</b>「<b class="text-rose-600">') + '</b> 投放' + rockets[0].daysNum + '天即冲进 TOP10，题材/钩子值得快速拆解跟进');
+        if (evergreens.length) watch.push('常青 <b class="text-slate-900">' + escapeHtml(evergreens[0].drama) + '</b> 已 <b class="text-slate-900">' + evergreens[0].onDays + ' 期</b>在榜，可作对标样本');
+        bullets.push({
+          icon: '⭐', label: '重点关注', color: '#DB2777', bg: '#FDF2F8',
+          text: watch.length ? watch.join('；') + '。' : noRocketWord + '暂无黑马与常青剧，建议下次调研关注新投放剧目初期表现。'
+        });
       }
 
       document.getElementById('rankAnalysisBadge').textContent =
         rankState.mode === 'day' ? '当日复盘' : (rankState.mode === 'week' ? '7日复盘' : '30日复盘');
       document.getElementById('rankNarrative').innerHTML = bullets.map(b => `
-          <li class="flex items-start gap-2 text-xs sm:text-sm leading-relaxed">
-            <span class="shrink-0 font-bold text-slate-900 whitespace-nowrap">${b.icon} <span class="text-indigo-700">${escapeHtml(b.label)}</span></span>
-            <span class="text-slate-700">${escapeHtml(b.text)}</span>
+          <li class="rounded-xl border-l-4 p-3" style="border-color:${b.color};background:${b.bg}22">
+            <div class="flex items-center gap-1.5 text-xs font-bold">
+              <span class="w-5 h-5 rounded-md flex items-center justify-center text-[11px]" style="background:${b.color}">${b.icon}</span>
+              <span style="color:${b.color}">${escapeHtml(b.label)}</span>
+            </div>
+            <p class="text-xs text-slate-700 mt-1.5 leading-relaxed">${b.text}</p>
           </li>`).join('') +
-        (unmatchedCnt ? '<li class="text-[11px] text-slate-400">注：另有 ' + unmatchedCnt + ' 部剧目尚未进入拆解库，未计入标签统计。</li>' : '');
+        (unmatchedCnt ? '<li class="text-[11px] text-slate-400 px-1">注：另有 ' + unmatchedCnt + ' 部剧目尚未进入拆解库，未计入标签统计。</li>' : '');
 
-      // ---- 补充明细（精简为2张卡）----
+      // ---- 补充明细（结构化展示）----
       document.getElementById('rankInsightTitle').textContent = '补充明细';
-      document.getElementById('rankInsights').innerHTML = [
-        {
-          kicker: '平台 × 新老 × 热度水位',
-          title: topApps.length ? topApps[0][0] + ' 居首（' + topApps[0][1] + '部，' + fmtPct(topApps[0][1], n) + '）' : '暂无 APP 数据',
-          body: (topApps.length ? '平台在榜：' + topApps.map(x => x[0] + ' ' + x[1] + '部').join('、') + '；' : '') +
-            '新/老 = ' + newCnt + '/' + (n - newCnt) +
-            (avgHeat != null ? '；平均热度 ' + fmtBig(avgHeat) + '，最高 ' + fmtBig(Math.max(...heats)) + '。' : '。')
-        },
-        {
-          kicker: '🚀 黑马清单 / 🔁 常青清单',
-          title: rocketCnt + ' 部黑马 · ' + repeatCnt + ' 部常青',
-          body: (rockets.length ? '黑马：' + rockets.slice(0, 5).map(r => r.drama + '（投放' + r.daysNum + '天 · TOP' + r.rank + '）').join('；') + '。' : '黑马：无。') +
-            (evergreens.length ? '常青：' + evergreens.map(r => r.drama + '（' + r.onDays + '期）').join('、') + '。' : '常青：无。')
-        }
-      ].map(ins => `
-        <div class="p-4 rounded-xl bg-slate-50/90 border border-slate-200/80">
-          <div class="text-xs font-bold text-indigo-600 uppercase tracking-wider">${escapeHtml(ins.kicker)}</div>
-          <div class="text-sm font-bold text-slate-900 mt-1">${escapeHtml(ins.title)}</div>
-          <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">${escapeHtml(ins.body)}</p>
+      const appAll = {};
+      sorted.forEach(r => { if (r.app) appAll[r.app] = (appAll[r.app] || 0) + 1; });
+      const appList = Object.entries(appAll).sort((a, b) => b[1] - a[1]);
+      const appMax = appList.length ? appList[0][1] : 1;
+      const platformRows = appList.slice(0, 6).map(x =>
+        '<div class="flex items-center gap-2 text-xs">' +
+        '<span class="w-24 shrink-0 truncate font-semibold text-slate-700">' + escapeHtml(x[0]) + '</span>' +
+        '<span class="flex-1 h-2 rounded-full bg-slate-200/70 overflow-hidden"><span class="block h-full rounded-full bg-indigo-500" style="width:' + Math.round(x[1] / appMax * 100) + '%"></span></span>' +
+        '<span class="w-20 text-right tabular-nums text-slate-600 shrink-0">' + x[1] + '部 · ' + fmtPct(x[1], n) + '</span></div>'
+      ).join('');
+      const newPct = Math.round(newCnt / Math.max(n, 1) * 100);
+      const heatChip = avgHeat != null
+        ? '<div class="flex flex-wrap gap-2 mt-3"><span class="px-2.5 py-1 rounded-lg bg-slate-100 text-[11px] text-slate-600">平均热度 <b class="tabular-nums text-slate-900">' + fmtBig(avgHeat) + '</b></span>' +
+          '<span class="px-2.5 py-1 rounded-lg bg-slate-100 text-[11px] text-slate-600">最高热度 <b class="tabular-nums text-slate-900">' + fmtBig(Math.max(...heats)) + '</b></span></div>'
+        : '';
+      const rocketItems = rockets.length
+        ? rockets.slice(0, 6).map(r =>
+            '<div class="flex items-center gap-2 py-1.5 border-b border-slate-100 last:border-0">' +
+            '<span class="px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 text-[10px] font-bold whitespace-nowrap">🚀 ' + r.daysNum + '天</span>' +
+            '<button class="font-semibold text-slate-900 hover:text-indigo-600 hover:underline text-xs text-left truncate" data-detail-jump="' + escapeHtml(r.drama) + '">' + escapeHtml(r.drama) + '</button>' +
+            '<span class="text-[10px] text-slate-500 whitespace-nowrap ml-auto shrink-0">TOP' + r.rank + ' · ' + escapeHtml(r.app || '-') + '</span></div>'
+          ).join('')
+        : '<div class="py-2 text-xs text-slate-400">本期无「投放≤7天且进 TOP10」的黑马剧目</div>';
+      const evergreenItems = evergreens.length
+        ? evergreens.map(r =>
+            '<div class="flex items-center gap-2 py-1.5 border-b border-slate-100 last:border-0">' +
+            '<span class="px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 text-[10px] font-bold whitespace-nowrap">🔁 ' + r.onDays + '期</span>' +
+            '<button class="font-semibold text-slate-900 hover:text-indigo-600 hover:underline text-xs text-left truncate" data-detail-jump="' + escapeHtml(r.drama) + '">' + escapeHtml(r.drama) + '</button>' +
+            '<span class="text-[10px] text-slate-500 whitespace-nowrap ml-auto shrink-0">' + escapeHtml(r.app || '-') + '</span></div>'
+          ).join('')
+        : '<div class="py-2 text-xs text-slate-400">暂无连续 2 期及以上在榜的常青剧目</div>';
+      document.getElementById('rankInsights').innerHTML = `
+        <div class="p-4 rounded-xl bg-slate-50/90 border border-slate-200/80 space-y-3">
+          <div>
+            <div class="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-2">📱 平台在榜结构</div>
+            ${platformRows || '<div class="text-xs text-slate-400">暂无 APP 数据</div>'}
+          </div>
+          <div>
+            <div class="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-2">🆕 新老剧构成</div>
+            <div class="flex h-3 rounded-full overflow-hidden bg-slate-200/70">
+              <span class="h-full bg-emerald-500" style="width:${newPct}%"></span>
+              <span class="h-full bg-slate-400" style="width:${100 - newPct}%"></span>
+            </div>
+            <div class="flex justify-between mt-1.5 text-[11px]">
+              <span class="text-emerald-700 font-semibold">新剧 ${newCnt} 部 · ${fmtPct(newCnt, n)}</span>
+              <span class="text-slate-500 font-semibold">老剧 ${n - newCnt} 部 · ${fmtPct(n - newCnt, n)}</span>
+            </div>
+          </div>
+          ${heatChip}
         </div>
-      `).join('');
+        <div class="p-4 rounded-xl bg-slate-50/90 border border-slate-200/80 space-y-3">
+          <div>
+            <div class="text-xs font-bold text-rose-600 uppercase tracking-wider mb-1">🚀 新投黑马清单</div>
+            ${rocketItems}
+          </div>
+          <div>
+            <div class="text-xs font-bold text-amber-600 uppercase tracking-wider mb-1 mt-3">🔁 常青在榜清单</div>
+            ${evergreenItems}
+          </div>
+        </div>`;
+      document.querySelectorAll('#rankInsights [data-detail-jump]').forEach(btn => {
+        btn.addEventListener('click', () => jumpToDrama(btn.getAttribute('data-detail-jump')));
+      });
+
     }
 
     // ---- 标签汇总板块（与导出口径一致：按剧名去重、二级标签取并集）----
