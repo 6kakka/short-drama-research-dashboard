@@ -81,6 +81,7 @@
         <button data-tab="overview" class="nav-pill active px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-700">库内总览 &amp; 走向</button>
         <button data-tab="rank" class="nav-pill px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-700">每日榜单复盘</button>
         <button data-tab="explorer" class="nav-pill px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-700">分类检索库</button>
+        <button data-tab="tags" class="nav-pill px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-500 hover:text-slate-700">标签汇总</button>
       </nav>
 
       <div class="flex items-center gap-2 shrink-0">
@@ -268,6 +269,65 @@
         <div id="rankInsights" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
       </div>
     </section>
+    <section id="tab-tags" class="hidden space-y-5">
+      <div class="card-surface p-5 sm:p-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h2 class="text-base sm:text-lg font-bold text-slate-900">分类标签汇总</h2>
+            <p class="text-xs text-slate-500 mt-1">基于拆解库实时计算 · 同一剧多次调研按剧名去重，二级标签取全部记录并集 · 可点击表中剧名跳转检索库</p>
+          </div>
+          <div id="tagScaleChips" class="flex flex-wrap gap-2 shrink-0"></div>
+        </div>
+      </div>
+
+      <div class="card-surface p-5 sm:p-6">
+        <h3 class="text-sm sm:text-base font-bold text-slate-900 mb-3">一级标签汇总</h3>
+        <div class="overflow-x-auto rounded-xl border border-slate-200/90">
+          <table class="w-full text-left border-collapse text-xs sm:text-sm">
+            <thead>
+              <tr class="bg-slate-50 text-slate-700 border-b border-slate-200">
+                <th class="py-2.5 px-3 font-bold whitespace-nowrap">一级标签</th>
+                <th class="py-2.5 px-3 font-bold whitespace-nowrap">剧目数</th>
+                <th class="py-2.5 px-3 font-bold whitespace-nowrap">频道构成</th>
+                <th class="py-2.5 px-3 font-bold whitespace-nowrap">APP数</th>
+                <th class="py-2.5 px-3 font-bold whitespace-nowrap">二级标签数</th>
+                <th class="py-2.5 px-3 font-bold">代表剧目（按最高热度）</th>
+              </tr>
+            </thead>
+            <tbody id="tagPrimaryBody" class="divide-y divide-slate-100 text-slate-600"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card-surface p-5 sm:p-6">
+        <h3 class="text-sm sm:text-base font-bold text-slate-900 mb-3">频道 × 一级标签交叉</h3>
+        <div class="overflow-x-auto rounded-xl border border-slate-200/90">
+          <table id="tagCrossTable" class="w-full text-left border-collapse text-xs"></table>
+        </div>
+      </div>
+
+      <div class="card-surface p-5 sm:p-6">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+          <h3 class="text-sm sm:text-base font-bold text-slate-900">二级标签频次</h3>
+          <input id="tagSecSearch" type="text" placeholder="搜索二级标签..."
+            class="w-56 px-3 py-1.5 text-xs rounded-xl border border-slate-200 focus:border-indigo-500 outline-none" />
+        </div>
+        <div class="overflow-x-auto rounded-xl border border-slate-200/90">
+          <table class="w-full text-left border-collapse text-xs sm:text-sm">
+            <thead>
+              <tr class="bg-slate-50 text-slate-700 border-b border-slate-200">
+                <th class="py-2.5 px-3 font-bold whitespace-nowrap w-12">#</th>
+                <th class="py-2.5 px-3 font-bold whitespace-nowrap">二级标签</th>
+                <th class="py-2.5 px-3 font-bold whitespace-nowrap">关联剧目数</th>
+                <th class="py-2.5 px-3 font-bold">所属一级标签（前3）</th>
+              </tr>
+            </thead>
+            <tbody id="tagSecBody" class="divide-y divide-slate-100 text-slate-600"></tbody>
+          </table>
+        </div>
+        <div id="tagSecMore" class="mt-3 text-center"></div>
+      </div>
+    </section>
   </main>
 
   <script>
@@ -286,7 +346,7 @@
 
     function parseSecondaryTags(raw) {
       if (!raw) return [];
-      return String(raw).split(/[;；,，]/).map(s => s.trim()).filter(Boolean);
+      return String(raw).split(/[;；,，、\n]/).map(s => s.trim()).filter(Boolean);
     }
 
     function fmtPct(part, total) {
@@ -313,11 +373,12 @@
       document.querySelectorAll('[data-tab]').forEach(btn => {
         btn.classList.toggle('active', btn.getAttribute('data-tab') === tab);
       });
-      ['tab-overview', 'tab-explorer', 'tab-rank'].forEach(id => {
+      ['tab-overview', 'tab-explorer', 'tab-rank', 'tab-tags'].forEach(id => {
         document.getElementById(id).classList.toggle('hidden', id !== 'tab-' + tab);
       });
       if (tab === 'explorer') renderExplorer();
       if (tab === 'rank') renderRank();
+      if (tab === 'tags') renderTagSummary();
     }
 
     function classifyMacroPlate(primary) {
@@ -1114,6 +1175,121 @@
         </div>
       `).join('');
     }
+
+    // ---- 标签汇总板块（与导出口径一致：按剧名去重、二级标签取并集）----
+    let tagSecState = { q: '', expanded: false };
+    function buildDramaIndex() {
+      const map = new Map();
+      records.forEach(r => {
+        const key = rankNorm(r['短剧剧名']);
+        if (!key) return;
+        if (!map.has(key)) map.set(key, { name: String(r['短剧剧名'] || '').trim(), rows: [] });
+        map.get(key).rows.push(r);
+      });
+      const arr = [];
+      map.forEach(d => {
+        const withDate = d.rows.filter(r => /^\d{4}-\d{2}-\d{2}$/.test(String(r['调研日期'] || '')));
+        const sorted = [...withDate, ...d.rows.filter(r => !withDate.includes(r))];
+        const latest = sorted[sorted.length - 1];
+        d.app = (latest?.['APP名称'] || d.rows.map(r => r['APP名称']).find(Boolean) || '').trim();
+        d.channel = (latest?.['频道'] || d.rows.map(r => r['频道']).find(Boolean) || '').trim() || '未标注';
+        d.primary = (latest?.['一级标签'] || d.rows.map(r => r['一级标签']).find(Boolean) || '').trim() || '未分类';
+        const secs = new Set();
+        d.rows.forEach(r => parseSecondaryTags(r['二级标签']).forEach(s => secs.add(s)));
+        d.secs = [...secs];
+        const heats = d.rows.map(r => Number(r['热度'])).filter(x => !isNaN(x) && x > 0);
+        d.maxHeat = heats.length ? Math.max(...heats) : 0;
+        arr.push(d);
+      });
+      return arr;
+    }
+
+    function renderTagSummary() {
+      const dramas = buildDramaIndex();
+      const primaries = {};
+      dramas.forEach(d => { (primaries[d.primary] = primaries[d.primary] || []).push(d); });
+      const primSorted = Object.entries(primaries).sort((a, b) => b[1].length - a[1].length);
+      const apps = new Set(dramas.map(d => d.app).filter(Boolean));
+
+      document.getElementById('tagScaleChips').innerHTML = [
+        ['剧目', dramas.length], ['一级标签', primSorted.length], ['二级标签', new Set(dramas.flatMap(d => d.secs)).size], ['竞品APP', apps.size]
+      ].map(([k, v]) => `<span class="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-medium whitespace-nowrap">${k} <b class="tabular-nums">${v}</b></span>`).join('');
+
+      document.getElementById('tagPrimaryBody').innerHTML = primSorted.map(([p, list]) => {
+        const ch = {};
+        list.forEach(d => ch[d.channel] = (ch[d.channel] || 0) + 1);
+        const chStr = Object.entries(ch).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${escapeHtml(k)}×${v}`).join('、');
+        const pApps = new Set(list.map(d => d.app).filter(Boolean));
+        const secCnt = new Set(list.flatMap(d => d.secs)).size;
+        const reps = [...list].sort((a, b) => b.maxHeat - a.maxHeat).slice(0, 3);
+        return `<tr class="hover:bg-slate-50/60">
+          <td class="py-2.5 px-3 font-semibold text-slate-900 whitespace-nowrap">${escapeHtml(p)}</td>
+          <td class="py-2.5 px-3 tabular-nums">${list.length}</td>
+          <td class="py-2.5 px-3 whitespace-nowrap">${chStr}</td>
+          <td class="py-2.5 px-3 tabular-nums">${pApps.size}</td>
+          <td class="py-2.5 px-3 tabular-nums">${secCnt}</td>
+          <td class="py-2.5 px-3">${reps.map(d => `<button class="text-indigo-600 hover:underline mr-2" data-tag-jump="${escapeHtml(d.name)}">${escapeHtml(d.name)}</button>`).join('') || '-'}</td>
+        </tr>`;
+      }).join('');
+
+      const channels = [...new Set(dramas.map(d => d.channel))].sort();
+      const cross = {};
+      dramas.forEach(d => {
+        cross[d.channel] = cross[d.channel] || {};
+        cross[d.channel][d.primary] = (cross[d.channel][d.primary] || 0) + 1;
+      });
+      document.getElementById('tagCrossTable').innerHTML =
+        `<thead><tr class="bg-slate-50 text-slate-700 border-b border-slate-200">
+          <th class="py-2 px-3 font-bold sticky left-0 bg-slate-50">频道 \\ 题材</th>
+          ${primSorted.map(([p]) => `<th class="py-2 px-3 font-bold whitespace-nowrap">${escapeHtml(p)}</th>`).join('')}
+          <th class="py-2 px-3 font-bold">合计</th></tr></thead>
+        <tbody class="divide-y divide-slate-100 text-slate-600">` +
+        channels.map(ch => `<tr class="hover:bg-slate-50/60">
+          <td class="py-2 px-3 font-semibold text-slate-900 sticky left-0 bg-white">${escapeHtml(ch)}</td>
+          ${primSorted.map(([p]) => `<td class="py-2 px-3 text-center tabular-nums ${cross[ch]?.[p] ? 'text-slate-800' : 'text-slate-300'}">${cross[ch]?.[p] || '-'}</td>`).join('')}
+          <td class="py-2 px-3 text-center font-bold tabular-nums">${Object.values(cross[ch] || {}).reduce((a, b) => a + b, 0)}</td>
+        </tr>`).join('') +
+        `<tr class="bg-slate-50 font-bold text-slate-900">
+          <td class="py-2 px-3 sticky left-0 bg-slate-50">合计</td>
+          ${primSorted.map(([p]) => `<td class="py-2 px-3 text-center tabular-nums">${primaries[p].length}</td>`).join('')}
+          <td class="py-2 px-3 text-center tabular-nums">${dramas.length}</td></tr></tbody>`;
+
+      // 二级标签频次
+      const secMap = {};
+      dramas.forEach(d => d.secs.forEach(s => {
+        secMap[s] = secMap[s] || { dramas: new Set(), prims: {} };
+        secMap[s].dramas.add(d.name);
+        secMap[s].prims[d.primary] = (secMap[s].prims[d.primary] || 0) + 1;
+      }));
+      let secRows = Object.entries(secMap).map(([s, v]) => ({
+        s, cnt: v.dramas.size, prims: Object.entries(v.prims).sort((a, b) => b[1] - a[1]).slice(0, 3).map(x => x[0])
+      })).sort((a, b) => b.cnt - a.cnt);
+      const q = tagSecState.q.trim().toLowerCase();
+      if (q) secRows = secRows.filter(x => x.s.toLowerCase().includes(q));
+      const TAG_SEC_PAGE = 50;
+      const visible = tagSecState.expanded || q ? secRows : secRows.slice(0, TAG_SEC_PAGE);
+      document.getElementById('tagSecBody').innerHTML = visible.map((x, i) => `
+        <tr class="hover:bg-slate-50/60">
+          <td class="py-2 px-3 text-slate-400 tabular-nums">${i + 1}</td>
+          <td class="py-2 px-3 font-semibold text-slate-900">${escapeHtml(x.s)}</td>
+          <td class="py-2 px-3 tabular-nums">${x.cnt}</td>
+          <td class="py-2 px-3">${x.prims.map(p => `<span class="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 text-[11px] mr-1.5 whitespace-nowrap">${escapeHtml(p)}</span>`).join('')}</td>
+        </tr>`).join('') || `<tr><td colspan="4" class="py-5 text-center text-slate-500">没有匹配的二级标签</td></tr>`;
+      document.getElementById('tagSecMore').innerHTML = !q && secRows.length > TAG_SEC_PAGE
+        ? (tagSecState.expanded
+          ? `<button id="tagSecCollapse" class="px-4 py-2 text-xs font-medium rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600">收起 ↑</button>`
+          : `<button id="tagSecExpand" class="px-4 py-2 text-xs font-medium rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200">展开全部 ${secRows.length} 个 ▼</button>`)
+        : (q ? `<span class="text-xs text-slate-400">搜索结果 ${secRows.length} 个</span>` : '');
+      const expandBtn = document.getElementById('tagSecExpand');
+      if (expandBtn) expandBtn.addEventListener('click', () => { tagSecState.expanded = true; renderTagSummary(); });
+      const collapseBtn = document.getElementById('tagSecCollapse');
+      if (collapseBtn) collapseBtn.addEventListener('click', () => { tagSecState.expanded = false; renderTagSummary(); });
+
+      document.querySelectorAll('#tab-tags [data-tag-jump]').forEach(btn => {
+        btn.addEventListener('click', () => jumpToDrama(btn.getAttribute('data-tag-jump')));
+      });
+    }
+    document.getElementById('tagSecSearch').addEventListener('input', e => { tagSecState.q = e.target.value; renderTagSummary(); });
 
     document.getElementById('rankDate').addEventListener('change', e => { rankState.date = e.target.value; rankState.expanded = false; renderRank(); });
     document.getElementById('ageFilter').addEventListener('change', e => { rankState.age = e.target.value; rankState.expanded = false; renderRank(); });
