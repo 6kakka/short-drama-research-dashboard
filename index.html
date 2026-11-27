@@ -275,15 +275,15 @@
             <span id="rankAnalysisBadge" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">当日复盘</span>
             <h2 class="text-base sm:text-lg font-bold text-slate-900">榜单内容趋势分析</h2>
           </div>
-          <p class="text-xs text-slate-500 mt-1">与上一周期对比的内容走向研判 · 二级梗点词云（字号=热度，点击跳检索库）</p>
+          <p class="text-xs text-slate-500 mt-1">与上一周期对比的内容走向研判 · 标签词云（一级标签为主词、核心二级梗点为辅词，字号=在榜剧数，点击跳检索库）</p>
         </div>
 
         <div id="rankTrendBox"></div>
 
         <div class="grid grid-cols-1 lg:grid-cols-5 gap-5">
           <div class="lg:col-span-3">
-            <div class="text-xs font-bold text-slate-500 mb-2">🎯 二级梗点词云</div>
-            <div id="rankCloud" class="flex flex-wrap gap-x-3.5 gap-y-1 items-baseline content-center rounded-xl bg-slate-50/70 border border-slate-200/70 px-4 py-4 min-h-[150px]"></div>
+            <div class="text-xs font-bold text-slate-500 mb-2">🎯 标签词云 <span class="font-normal text-slate-400">大字=一级标签 · 小字=核心二级梗点</span></div>
+            <div id="rankCloud" class="relative rounded-xl bg-gradient-to-br from-slate-50 via-white to-indigo-50/50 border border-slate-200/70 overflow-hidden select-none"></div>
           </div>
           <div class="lg:col-span-2">
             <div class="text-xs font-bold text-slate-500 mb-2">研判结论</div>
@@ -1193,33 +1193,95 @@
           '</div></div>';
       }
 
-      // ---- 二级梗点词云（彩色标签胶囊）----
+      // ---- 标签词云（不规则螺旋布局：一级标签为主词，核心二级梗点为辅词）----
       const secCntMap = {};
       matched.forEach(({ t }) => t.sec.forEach(s => { secCntMap[s] = (secCntMap[s] || 0) + 1; }));
-      const cloudTags = Object.entries(secCntMap).sort((a, b) => b[1] - a[1]).slice(0, 42);
-      const cloudMax = cloudTags.length ? cloudTags[0][1] : 1;
-      const CLOUD_COLORS = [
-        ['#EEF2FF', '#4338CA'], ['#F0FDFA', '#0F766E'], ['#FFF7ED', '#C2410C'],
-        ['#FDF2F8', '#BE185D'], ['#F5F3FF', '#6D28D9'], ['#EFF6FF', '#1D4ED8'],
-        ['#ECFEFF', '#0E7490'], ['#FEFCE8', '#A16207']
-      ];
-      document.getElementById('rankCloud').innerHTML = cloudTags.length
-        ? cloudTags.map((x, i) => {
-            const [bg, fg] = CLOUD_COLORS[i % CLOUD_COLORS.length];
-            const fs = 12 + Math.round(12 * x[1] / cloudMax);
-            return '<button data-cloud-tag="' + escapeHtml(x[0]) + '" title="#' + escapeHtml(x[0]) + '（' + x[1] + ' 部在榜）· 点击到检索库查看" ' +
-              'class="inline-flex items-baseline gap-1 rounded-full border transition hover:-translate-y-0.5 hover:shadow-sm px-2.5 py-1 leading-none" ' +
-              'style="font-size:' + fs + 'px;background:' + bg + ';color:' + fg + ';border-color:' + fg + '22;font-weight:' + (x[1] >= cloudMax * 0.55 ? 700 : 500) + '">' +
-              '#' + escapeHtml(x[0]) +
-              '<span class="rounded-full bg-white/80 tabular-nums" style="font-size:9px;color:' + fg + ';padding:1px 5px;font-weight:700">' + x[1] + '</span></button>';
-          }).join('')
-        : '<span class="text-xs text-slate-400">当前筛选范围内没有已拆解剧目的二级标签</span>';
-      document.querySelectorAll('#rankCloud [data-cloud-tag]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          filters.search = btn.getAttribute('data-cloud-tag');
-          document.getElementById('searchInput').value = filters.search;
-          switchTab('explorer');
+      const CLOUD_PALETTE = ['#0F766E', '#C2410C', '#6D28D9', '#BE185D', '#1D4ED8', '#B45309', '#0E7490', '#DC2626', '#4D7C0F', '#7C3AED'];
+      const priWords = Object.entries(curTagCnt).sort((a, b) => b[1] - a[1]);
+      const secWords = Object.entries(secCntMap).sort((a, b) => b[1] - a[1]).slice(0, 30);
+      const priMax = priWords.length ? priWords[0][1] : 1;
+      const secMax = secWords.length ? secWords[0][1] : 1;
+
+      function buildRankCloud() {
+        const el = document.getElementById('rankCloud');
+        el.innerHTML = '';
+        if (!priWords.length && !secWords.length) {
+          el.innerHTML = '<span class="text-xs text-slate-400">当前筛选范围内没有已拆解剧目的标签数据</span>';
+          return;
+        }
+        const W = Math.max(el.clientWidth || 320, 280), H = 400;
+        el.style.height = H + 'px';
+        // 预测量宽度
+        const meas = document.createElement('span');
+        meas.style.cssText = 'position:absolute;left:-9999px;top:0;visibility:hidden;white-space:nowrap';
+        document.body.appendChild(meas);
+        // 窄屏时整体缩小字号，保证放得下更多词
+        const fsScale = W < 500 ? 0.7 : (W < 900 ? 0.85 : 1);
+        // 大词（一级标签）在前、小词（二级梗点）在后，字号降序放置 → 大词居中、小词填缝
+        const items = priWords.map(([w, c]) => ({ w, c, pri: true, fs: Math.max(13, Math.round((26 + 18 * c / priMax) * fsScale)) }))
+          .concat(secWords.map(([w, c]) => ({ w, c, pri: false, fs: Math.max(10, Math.round((12 + 8 * c / secMax) * fsScale)) })))
+          .sort((a, b) => b.fs - a.fs);
+        const placed = [];
+        const frag = document.createDocumentFragment();
+        let ci = Math.floor(Math.random() * CLOUD_PALETTE.length);
+        items.forEach(it => {
+          meas.style.font = (it.pri ? '800 ' : '600 ') + it.fs + 'px/1.15 "PingFang SC","Microsoft YaHei",sans-serif';
+          meas.textContent = it.w;
+          const w = meas.offsetWidth + 6, h = Math.ceil(it.fs * 1.3);
+          const cx = W / 2, cy = H / 2;
+          let ok = false, px = 0, py = 0;
+          const fits = (x, y) => {
+            if (x < 2 || y < 2 || x + w > W - 2 || y + h > H - 2) return false;
+            for (const r of placed) {
+              if (x < r.x + r.w + 3 && x + w + 3 > r.x && y < r.y + r.h + 3 && y + h + 3 > r.y) return false;
+            }
+            return true;
+          };
+          // 阿基米德螺旋（线性半径增长）+ 碰撞检测，椭圆拉伸充分利用横向空间
+          for (let step = 0; step < 900 && !ok; step++) {
+            const t = step * 0.6;
+            const rr = 1.1 * step;
+            const x = cx + rr * Math.cos(t) - w / 2;
+            const y = cy + rr * 0.42 * Math.sin(t) - h / 2;
+            if (fits(x, y)) { ok = true; px = x; py = y; }
+          }
+          // 兜底：随机撒点填补空隙，尽量不丢词
+          for (let tryN = 0; tryN < 400 && !ok; tryN++) {
+            const x = 2 + Math.random() * Math.max(W - w - 4, 1);
+            const y = 2 + Math.random() * Math.max(H - h - 4, 1);
+            if (fits(x, y)) { ok = true; px = x; py = y; }
+          }
+          if (!ok) return;
+          placed.push({ x: px, y: py, w, h });
+          const color = CLOUD_PALETTE[ci++ % CLOUD_PALETTE.length];
+          const s = document.createElement('button');
+          s.style.cssText = 'position:absolute;left:' + px.toFixed(1) + 'px;top:' + py.toFixed(1) + 'px;font-size:' + it.fs + 'px;line-height:1.15;' +
+            'color:' + color + ';font-weight:' + (it.pri ? 800 : 600) + ';white-space:nowrap;background:none;border:none;cursor:pointer;padding:0;' +
+            'font-family:inherit;transition:transform .15s ease;opacity:' + (it.pri ? '1' : '.85');
+          s.textContent = it.w;
+          s.title = (it.pri ? '一级标签' : '二级梗点') + ' #' + it.w + '（' + it.c + ' 部在榜）· 点击到检索库查看';
+          s.addEventListener('mouseenter', () => { s.style.transform = 'scale(1.12)'; });
+          s.addEventListener('mouseleave', () => { s.style.transform = ''; });
+          s.addEventListener('click', () => {
+            if (it.pri) {
+              filters.primary = it.w;
+              document.getElementById('primaryFilter').value = it.w;
+            } else {
+              filters.search = it.w;
+              document.getElementById('searchInput').value = it.w;
+            }
+            switchTab('explorer');
+          });
+          frag.appendChild(s);
         });
+        meas.remove();
+        el.appendChild(frag);
+      }
+      buildRankCloud();
+      let cloudRzT = null;
+      window.addEventListener('resize', () => {
+        clearTimeout(cloudRzT);
+        cloudRzT = setTimeout(buildRankCloud, 300);
       });
 
       // ---- 研判结论（彩色重点标识，趋势导向）----
